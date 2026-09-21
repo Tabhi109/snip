@@ -19,8 +19,11 @@ add_library(snip_core STATIC
     src/sanitizer.cpp
     src/runner.cpp
     src/cache.cpp
+    src/dedup.cpp
     src/git_parser.cpp
+    src/test_parser.cpp
     src/dispatcher.cpp
+    src/init.cpp
 )
 
 add_executable(snip src/main.cpp)

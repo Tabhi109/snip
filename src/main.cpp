@@ -5,14 +5,29 @@
 #include "snip/sanitizer.hpp"
 #include "snip/dispatcher.hpp"
 #include "snip/cache.hpp"
+#include "snip/init.hpp"
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         std::cerr << "Usage: snip <command> [args...]\n";
+        std::cerr << "       snip init [--claude]\n";
         std::cerr << "Example: snip git status\n";
         return 1;
     }
 
+    std::string first_arg = argv[1];
+
+    // Handle `snip init`
+    if (first_arg == "init") {
+        bool for_claude = (argc > 2 && std::string(argv[2]) == "--claude");
+        if (for_claude) {
+            snip::SetupManager::setup_claude_code();
+        }
+        snip::SetupManager::setup_shims();
+        return 0;
+    }
+
+    // Collect command arguments
     std::vector<std::string> cmd_args;
     cmd_args.reserve(static_cast<size_t>(argc - 1));
     for (int i = 1; i < argc; ++i) {
