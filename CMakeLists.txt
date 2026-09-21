@@ -28,3 +28,5 @@ add_library(snip_core STATIC
 
 add_executable(snip src/main.cpp)
 target_link_libraries(snip PRIVATE snip_core)
+enable_testing()
+add_subdirectory(tests)
