@@ -24,6 +24,7 @@ add_library(snip_core STATIC
     src/test_parser.cpp
     src/dispatcher.cpp
     src/init.cpp
+    src/bpe.cpp
 )
 
 add_executable(snip src/main.cpp)

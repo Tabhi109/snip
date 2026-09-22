@@ -1,7 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include "snip/git_parser.hpp"
 
-TEST_CASE("GitParser strips verbose guidance hints", "[git]") {
+TEST_CASE("GitParser compresses verbose status into semantic format", "[git]") {
     snip::GitParser parser;
     std::vector<std::string> args = {"git", "status"};
     
@@ -16,5 +16,7 @@ TEST_CASE("GitParser strips verbose guidance hints", "[git]") {
 
     REQUIRE(res.was_compressed == true);
     REQUIRE(res.text.find("(use \"git add") == std::string::npos);
-    REQUIRE(res.text.find("modified:   src/main.cpp") != std::string::npos);
+    // The new parser emits "M src/main.cpp", not "modified: src/main.cpp"
+    REQUIRE(res.text.find("M src/main.cpp") != std::string::npos);
+    REQUIRE(res.text.find("branch: main") != std::string::npos);
 }

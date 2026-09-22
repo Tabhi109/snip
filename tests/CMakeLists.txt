@@ -12,6 +12,7 @@ add_executable(snip_tests
     test_sanitizer.cpp
     test_dedup.cpp
     test_git_parser.cpp
+    test_bpe.cpp
 )
 
 target_link_libraries(snip_tests PRIVATE snip_core Catch2::Catch2WithMain)

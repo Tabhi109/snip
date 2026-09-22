@@ -6,6 +6,7 @@
 #include "snip/dispatcher.hpp"
 #include "snip/cache.hpp"
 #include "snip/init.hpp"
+#include "snip/bpe.hpp"
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
@@ -17,7 +18,6 @@ int main(int argc, char* argv[]) {
 
     std::string first_arg = argv[1];
 
-    // Handle `snip init`
     if (first_arg == "init") {
         bool for_claude = (argc > 2 && std::string(argv[2]) == "--claude");
         if (for_claude) {
@@ -27,21 +27,20 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    // Collect command arguments
     std::vector<std::string> cmd_args;
     cmd_args.reserve(static_cast<size_t>(argc - 1));
     for (int i = 1; i < argc; ++i) {
         cmd_args.emplace_back(argv[i]);
     }
 
-    // 1. Run command via POSIX pipe engine
+    // 1. Run command
     snip::CommandResult res = snip::ProcessRunner::execute(cmd_args);
 
-    // 2. Sanitize ANSI codes and \r progress overwrites
+    // 2. Sanitize ANSI & progress bars
     std::string clean_stdout = snip::StreamSanitizer::sanitize(res.stdout_output);
     std::string clean_stderr = snip::StreamSanitizer::sanitize(res.stderr_output);
 
-    // 3. Apply Domain-Specific Parsing (e.g. Git, Tests)
+    // 3. Domain Parsing
     snip::ParseResult parsed = snip::Dispatcher::route_and_parse(cmd_args, clean_stdout, res.exit_code);
 
     // 4. Output the result
@@ -50,14 +49,23 @@ int main(int argc, char* argv[]) {
         std::cerr << clean_stderr;
     }
 
-    // 5. If compressed significantly, write raw output to cache and notify
-    if (parsed.was_compressed && parsed.original_bytes > parsed.compressed_bytes) {
-        snip::RecoveryCache::save_raw(res.stdout_output);
-        size_t saved_bytes = parsed.original_bytes - parsed.compressed_bytes;
-        double saved_pct = (static_cast<double>(saved_bytes) / static_cast<double>(parsed.original_bytes)) * 100.0;
-        
-        std::cout << "\n[snip: saved " << saved_pct << "% bytes. Raw log: " 
-                  << snip::RecoveryCache::CACHE_PATH << "]\n";
+    // 5. Accurate Token Counting with Embedded BPE
+    if (parsed.was_compressed) {
+        snip::BPETokenizer tokenizer;
+        size_t orig_tokens = tokenizer.count_tokens(res.stdout_output);
+        size_t compressed_tokens = tokenizer.count_tokens(parsed.text);
+
+        if (orig_tokens > compressed_tokens) {
+            snip::RecoveryCache::save_raw(res.stdout_output);
+
+            size_t saved_tokens = orig_tokens - compressed_tokens;
+            double saved_pct = (static_cast<double>(saved_tokens) / static_cast<double>(orig_tokens)) * 100.0;
+
+            std::cout << "\n[snip: " << orig_tokens << " -> " << compressed_tokens 
+                      << " tokens (" << saved_tokens << " saved, " 
+                      << static_cast<int>(saved_pct) << "% reduction). Raw: " 
+                      << snip::RecoveryCache::CACHE_PATH << "]\n";
+        }
     }
 
     return res.exit_code;
