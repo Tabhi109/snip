@@ -101,51 +101,43 @@ std::string GitParser::parse_status(std::string_view content) {
     }
 
     // Assemble dense output
+    // Assemble ultra-dense standard notation (80%+ token efficiency)
     std::string out;
-    out.reserve(content.size() / 3);
+    out.reserve(content.size() / 4);
 
-    out.append("branch: ").append(branch);
+    // 1. Standard compact branch header (## main)
+    out.append("## ").append(branch);
     if (!branch_sync.empty()) {
-        out.append(" (").append(branch_sync).append(")");
+        out.append(" [").append(branch_sync).append("]");
     }
     out.push_back('\n');
 
-    if (!staged.empty()) {
-        out.append("[staged]\n");
-        for (const auto& f : staged) {
-            out.append(f).push_back('\n');
-        }
+    // 2. Direct compact file entries (no [staged] or [unstaged] headers)
+    for (const auto& f : staged) {
+        out.append(f).push_back('\n');
+    }
+    for (const auto& f : unstaged) {
+        out.append(f).push_back('\n');
     }
 
-    if (!unstaged.empty()) {
-        out.append("[unstaged]\n");
-        for (const auto& f : unstaged) {
-            out.append(f).push_back('\n');
-        }
+    // 3. Compact untracked entries (?? prefix)
+    std::unordered_map<std::string, std::vector<std::string>> dir_map;
+    for (const auto& file : untracked) {
+        fs::path p(file);
+        std::string parent = p.has_parent_path() ? p.parent_path().string() : "";
+        dir_map[parent].push_back(file);
     }
 
-    if (!untracked.empty()) {
-        out.append("[untracked]\n");
-
-        // Group files by parent directory
-        std::unordered_map<std::string, std::vector<std::string>> dir_map;
-        for (const auto& file : untracked) {
-            fs::path p(file);
-            std::string parent = p.has_parent_path() ? p.parent_path().string() : "";
-            dir_map[parent].push_back(file);
-        }
-
-        for (const auto& [dir, files] : dir_map) {
-            if (!dir.empty() && files.size() >= 3) {
-                out.append("? [")
-                   .append(std::to_string(files.size()))
-                   .append(" files in ")
-                   .append(dir)
-                   .append("/]\n");
-            } else {
-                for (const auto& f : files) {
-                    out.append("? ").append(f).push_back('\n');
-                }
+    for (const auto& [dir, files] : dir_map) {
+        if (!dir.empty() && files.size() >= 3) {
+            out.append("?? [")
+               .append(std::to_string(files.size()))
+               .append(" files in ")
+               .append(dir)
+               .append("/]\n");
+        } else {
+            for (const auto& f : files) {
+                out.append("?? ").append(f).push_back('\n');
             }
         }
     }

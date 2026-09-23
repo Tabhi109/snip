@@ -18,5 +18,5 @@ TEST_CASE("GitParser compresses verbose status into semantic format", "[git]") {
     REQUIRE(res.text.find("(use \"git add") == std::string::npos);
     // The new parser emits "M src/main.cpp", not "modified: src/main.cpp"
     REQUIRE(res.text.find("M src/main.cpp") != std::string::npos);
-    REQUIRE(res.text.find("branch: main") != std::string::npos);
+    REQUIRE(res.text.find("## main") != std::string::npos);
 }
