@@ -13,8 +13,8 @@ add_executable(snip_tests
     test_dedup.cpp
     test_git_parser.cpp
     test_bpe.cpp
+    test_test_parser.cpp
 )
-
 target_link_libraries(snip_tests PRIVATE snip_core Catch2::Catch2WithMain)
 
 include(CTest)
