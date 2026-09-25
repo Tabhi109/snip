@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            target: macos-arm64
+            artifact: snip-macos-arm64.tar.gz
+          - os: macos-13
+            target: macos-x86_64
+            artifact: snip-macos-x86_64.tar.gz
+          - os: ubuntu-latest
+            target: linux-x86_64
+            artifact: snip-linux-x86_64.tar.gz
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Binary
+        run: cmake --build build --config Release
+
+      - name: Run Tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Package
+        run: |
+          tar -czvf ${{ matrix.artifact }} -C build snip
+
+      - name: Publish Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact }}

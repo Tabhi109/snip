@@ -4,6 +4,7 @@
 #include "snip/init.hpp"
 #include "snip/bpe.hpp"
 #include "snip/stats.hpp"
+#include "snip/mcp_server.hpp"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -23,6 +24,10 @@ int main(int argc, char* argv[]) {
             return snip::SetupManager::setup_claude_code() ? 0 : 1;
         }
         return snip::SetupManager::setup_shims() ? 0 : 1;
+    }
+    // Start the MCP server
+    if (first_arg == "mcp") {
+        return snip::MCPServer::run();
     }
 
     if (first_arg == "gain" || first_arg == "stats") {

@@ -28,6 +28,7 @@ add_library(snip_core STATIC
     src/search_parser.cpp
     src/file_parser.cpp
     src/stats.cpp
+    src/mcp_server.cpp
 )
 
 add_executable(snip src/main.cpp)
