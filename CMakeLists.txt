@@ -27,6 +27,7 @@ add_library(snip_core STATIC
     src/bpe.cpp
     src/search_parser.cpp
     src/file_parser.cpp
+    src/stats.cpp
 )
 
 add_executable(snip src/main.cpp)

@@ -1,72 +1,70 @@
-#include <iostream>
-#include <vector>
-#include <string>
 #include "snip/runner.hpp"
-#include "snip/sanitizer.hpp"
 #include "snip/dispatcher.hpp"
 #include "snip/cache.hpp"
 #include "snip/init.hpp"
 #include "snip/bpe.hpp"
+#include "snip/stats.hpp"
+#include <iostream>
+#include <vector>
+#include <string>
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        std::cerr << "Usage: snip <command> [args...]\n";
-        std::cerr << "       snip init [--claude]\n";
-        std::cerr << "Example: snip git status\n";
+        std::cerr << "Usage: snip <command> [args...]\n"
+                  << "       snip init [--claude|--shims]\n"
+                  << "       snip gain\n";
         return 1;
     }
 
     std::string first_arg = argv[1];
 
     if (first_arg == "init") {
-        bool for_claude = (argc > 2 && std::string(argv[2]) == "--claude");
-        if (for_claude) {
-            snip::SetupManager::setup_claude_code();
+        if (argc > 2 && std::string(argv[2]) == "--claude") {
+            return snip::SetupManager::setup_claude_code() ? 0 : 1;
         }
-        snip::SetupManager::setup_shims();
+        return snip::SetupManager::setup_shims() ? 0 : 1;
+    }
+
+    if (first_arg == "gain" || first_arg == "stats") {
+        snip::StatsManager::print_dashboard();
         return 0;
     }
 
     std::vector<std::string> cmd_args;
-    cmd_args.reserve(static_cast<size_t>(argc - 1));
     for (int i = 1; i < argc; ++i) {
         cmd_args.emplace_back(argv[i]);
     }
 
-    // 1. Run command
-    snip::CommandResult res = snip::ProcessRunner::execute(cmd_args);
+    auto run_res = snip::ProcessRunner::execute(cmd_args);
 
-    // 2. Sanitize ANSI & progress bars
-    std::string clean_stdout = snip::StreamSanitizer::sanitize(res.stdout_output);
-    std::string clean_stderr = snip::StreamSanitizer::sanitize(res.stderr_output);
-
-    // 3. Domain Parsing
-    snip::ParseResult parsed = snip::Dispatcher::route_and_parse(cmd_args, clean_stdout, res.exit_code);
-
-    // 4. Output the result
-    std::cout << parsed.text;
-    if (!clean_stderr.empty()) {
-        std::cerr << clean_stderr;
+    if (run_res.exit_code != 0 && run_res.stdout_output.empty()) {
+        std::cerr << run_res.stderr_output;
+        return run_res.exit_code;
     }
 
-    // 5. Accurate Token Counting with Embedded BPE
-    if (parsed.was_compressed) {
-        snip::BPETokenizer tokenizer;
-        size_t orig_tokens = tokenizer.count_tokens(res.stdout_output);
-        size_t compressed_tokens = tokenizer.count_tokens(parsed.text);
+    auto parse_res = snip::Dispatcher::route_and_parse(
+        cmd_args,
+        run_res.stdout_output,
+        run_res.exit_code
+    );
 
-        if (orig_tokens > compressed_tokens) {
-            snip::RecoveryCache::save_raw(res.stdout_output);
+    snip::BPETokenizer tokenizer;
+    size_t orig_tokens = tokenizer.count_tokens(run_res.stdout_output);
+    size_t comp_tokens = tokenizer.count_tokens(parse_res.text);
 
-            size_t saved_tokens = orig_tokens - compressed_tokens;
-            double saved_pct = (static_cast<double>(saved_tokens) / static_cast<double>(orig_tokens)) * 100.0;
+    snip::StatsManager::record_run(orig_tokens, comp_tokens);
 
-            std::cout << "\n[snip: " << orig_tokens << " -> " << compressed_tokens 
-                      << " tokens (" << saved_tokens << " saved, " 
-                      << static_cast<int>(saved_pct) << "% reduction). Raw: " 
-                      << snip::RecoveryCache::CACHE_PATH << "]\n";
-        }
+    snip::RecoveryCache::save_raw(run_res.stdout_output);
+
+    std::cout << parse_res.text;
+
+    if (parse_res.was_compressed) {
+        size_t saved_tokens = (orig_tokens > comp_tokens) ? (orig_tokens - comp_tokens) : 0;
+        int pct = (orig_tokens > 0) ? static_cast<int>((saved_tokens * 100) / orig_tokens) : 0;
+        std::cout << "\n[snip: " << orig_tokens << " -> " << comp_tokens
+                  << " tokens (" << saved_tokens << " saved, " << pct << "% reduction). Raw: "
+                  << snip::RecoveryCache::CACHE_PATH << "]\n";
     }
 
-    return res.exit_code;
+    return run_res.exit_code;
 }
