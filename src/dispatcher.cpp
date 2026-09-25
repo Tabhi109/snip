@@ -1,6 +1,8 @@
 #include "snip/dispatcher.hpp"
 #include "snip/git_parser.hpp"
 #include "snip/test_parser.hpp"
+#include "snip/search_parser.hpp"
+#include "snip/file_parser.hpp"
 
 namespace snip {
 
@@ -26,7 +28,15 @@ ParseResult Dispatcher::route_and_parse(
 
     if (binary == "git") {
         parser = std::make_unique<GitParser>();
-    } else if (binary == "pytest" || sub_cmd == "pytest" ||
+
+    } 
+    else if (binary == "rg" || binary == "grep") {
+        parser = std::make_unique<SearchParser>();
+    } 
+    else if (binary == "cat" || binary == "read" || binary == "find" || binary == "ls" || binary == "tree") {
+        parser = std::make_unique<FileParser>();
+    }
+    else if (binary == "pytest" || sub_cmd == "pytest" ||
                (binary == "cargo" && sub_cmd == "test") ||
                (binary == "go" && sub_cmd == "test") ||
                (binary == "npm" && (sub_cmd == "test" || sub_cmd == "t")) ||

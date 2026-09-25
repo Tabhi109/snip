@@ -1,6 +1,9 @@
 #pragma once
 
 #include "snip/parser.hpp"
+#include <string>
+#include <string_view>
+#include <vector>
 
 namespace snip {
 
@@ -12,9 +15,11 @@ public:
         int exit_code
     ) override;
 
-private:
     static std::string parse_status(std::string_view content);
     static std::string parse_diff(std::string_view content);
+    static std::string parse_push(std::string_view content, std::string_view stderr_content, int exit_code);
+    static std::string parse_commit(std::string_view content, int exit_code);
+    static std::string parse_log(std::string_view content);
 };
 
 } // namespace snip
