@@ -1,0 +1,9 @@
+[1/20] Building CXX object module_core.o
+[2/20] Building CXX object module_net.o
+[3/20] Building CXX object module_db.o
+In file included from src/module_db.cpp:12:
+include/db.h:55:18: error: no member named 'connect_timeout' in 'DatabaseConfig'
+   55 |     cfg.connect_timeout = 30;
+      |     ~~~ ^
+1 error generated.
+ninja: build stopped: subcommand failed.

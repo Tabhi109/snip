@@ -40,6 +40,12 @@ void RuleEngine::clear() noexcept {
     rule_table_.clear();
 }
 
+void RuleEngine::reset() {
+    clear();
+    load_embedded_rules();
+    load_user_and_project_rules();
+}
+
 size_t RuleEngine::rule_count() const noexcept {
     size_t count = 0;
     for (const auto& [_, rules] : rule_table_) {

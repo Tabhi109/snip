@@ -265,4 +265,5 @@ keep_columns = ["CONTAINER ID"]
     REQUIRE(rule->columnar.keep_columns.size() == 1);
 
     fs::remove_all(temp_dir);
+    engine.reset();
 }

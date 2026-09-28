@@ -127,6 +127,9 @@ public:
     // Clear all loaded rules (useful for test resets)
     void clear() noexcept;
 
+    // Reset to clean state (clears and reloads embedded and user/project rules)
+    void reset();
+
     // Number of registered rules
     size_t rule_count() const noexcept;
 

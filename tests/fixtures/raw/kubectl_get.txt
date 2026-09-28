@@ -1,0 +1,4 @@
+NAME                                READY   STATUS    RESTARTS   AGE   IP             NODE       NOMINATED NODE   READINESS GATES
+coredns-76f75df574-abcde            1/1     Running   0          42d   10.244.0.2     worker-1   <none>           <none>
+local-path-provisioner-6795b5f9d8   1/1     Running   2          42d   10.244.0.3     worker-1   <none>           <none>
+metrics-server-cdcc87486-xyz12      1/1     Running   0          12d   10.244.0.4     worker-2   <none>           <none>

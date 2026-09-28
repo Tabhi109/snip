@@ -1,0 +1,2 @@
+args = ["kubectl", "get", "pods", "-o", "wide"]
+exit_code = 0
