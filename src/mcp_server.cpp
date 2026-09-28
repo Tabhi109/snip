@@ -5,6 +5,7 @@
 #include "snip/bpe.hpp"
 #include "snip/stats.hpp"
 #include "snip/file_parser.hpp"
+#include "snip/search_parser.hpp"
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -131,6 +132,18 @@ void MCPServer::handle_request(std::string_view line) {
                     "\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"Path to the file to inspect\"}},"
                     "\"required\":[\"path\"]"
                 "}"
+            "},"
+            "{"
+                "\"name\":\"snip_search\","
+                "\"description\":\"Performs fast token-pruned codebase search with hierarchical grouping and match capping.\","
+                "\"inputSchema\":{"
+                    "\"type\":\"object\","
+                    "\"properties\":{"
+                        "\"query\":{\"type\":\"string\",\"description\":\"Search query or regex pattern\"},"
+                        "\"path\":{\"type\":\"string\",\"description\":\"Directory or file to search (defaults to .)\"}"
+                    "},"
+                    "\"required\":[\"query\"]"
+                "}"
             "}"
         "]}}";
         send_response(resp);
@@ -201,6 +214,48 @@ void MCPServer::handle_request(std::string_view line) {
             std::string resp = "{\"jsonrpc\":\"2.0\",\"id\":" + id + 
                 ",\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"" + 
                 json_escape(skeleton) + "\"}]}}";
+            send_response(resp);
+            return;
+        }
+
+        if (tool_name == "snip_search") {
+            std::string query = extract_json_string(line, "query");
+            std::string search_path = extract_json_string(line, "path");
+            if (search_path.empty()) search_path = ".";
+
+            if (query.empty()) {
+                std::string err = "{\"jsonrpc\":\"2.0\",\"id\":" + id + 
+                    ",\"result\":{\"isError\":true,\"content\":[{\"type\":\"text\",\"text\":\"'query' parameter is required\"}]}}";
+                send_response(err);
+                return;
+            }
+
+            // Execute ripgrep if available, otherwise grep
+            std::vector<std::string> args = {"rg", "-n", "-H", "--no-heading", query, search_path};
+            auto run_res = ProcessRunner::execute(args);
+            if (run_res.exit_code == 127 || (run_res.stdout_output.empty() && run_res.stderr_output.find("not found") != std::string::npos)) {
+                args = {"grep", "-rn", "-H", query, search_path};
+                run_res = ProcessRunner::execute(args);
+            }
+
+            std::string pruned = SearchParser::parse_ripgrep(run_res.stdout_output);
+
+            BPETokenizer tokenizer;
+            size_t orig_tokens = tokenizer.count_tokens(run_res.stdout_output);
+            size_t comp_tokens = tokenizer.count_tokens(pruned);
+            StatsManager::record_run(orig_tokens, comp_tokens);
+
+            if (run_res.stdout_output.size() > pruned.size()) {
+                size_t saved = (orig_tokens > comp_tokens) ? (orig_tokens - comp_tokens) : 0;
+                int pct = (orig_tokens > 0) ? static_cast<int>((saved * 100) / orig_tokens) : 0;
+                pruned += "\n[snip search: " + std::to_string(orig_tokens) + " -> " + 
+                          std::to_string(comp_tokens) + " tokens (" + std::to_string(saved) + 
+                          " saved, " + std::to_string(pct) + "% reduction)]";
+            }
+
+            std::string resp = "{\"jsonrpc\":\"2.0\",\"id\":" + id + 
+                ",\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"" + 
+                json_escape(pruned) + "\"}]}}";
             send_response(resp);
             return;
         }

@@ -1,0 +1,53 @@
+name: 💡 New Rule Request
+description: Propose a new CLI command to prune with snip
+title: "[Rule Request]: "
+labels: ["enhancement", "rules"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a new declarative rule for `snip`!
+        Please provide the raw verbose output and how you would like it pruned for AI coding agents.
+  - type: input
+    id: command
+    attributes:
+      label: CLI Command
+      description: The exact command line invoked (e.g., `terraform plan`, `npm audit`, `cargo check`).
+      placeholder: e.g. terraform plan
+    validations:
+      required: true
+  - type: textarea
+    id: raw_output
+    attributes:
+      label: Raw Command Output
+      description: Paste realistic verbose output from the command.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: desired_output
+    attributes:
+      label: Desired Pruned Output
+      description: Show what the compact, high-signal output should look like.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: strategy
+    attributes:
+      label: Recommended Pruning Strategy
+      description: Which declarative transformation strategy best fits this output?
+      options:
+        - "columnar (tabular data, keep specific columns)"
+        - "filter_replace (strip header lines, regex transforms)"
+        - "hierarchy (group by file or parent key)"
+        - "test_runner (collapse passing, extract failure assertions)"
+        - "Unsure / Needs Universal Fallback"
+    validations:
+      required: true
+  - type: input
+    id: token_impact
+    attributes:
+      label: Estimated Token Reduction
+      description: Rough estimate of token savings percentage.
+      placeholder: e.g. ~70%

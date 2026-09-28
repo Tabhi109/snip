@@ -13,9 +13,13 @@ struct StatsData {
 
 class StatsManager {
 public:
+    // Frontier model blended input pricing ($3.00 per 1M tokens)
+    static constexpr double BLENDED_COST_PER_TOKEN = 3.00 / 1000000.0;
+
     static std::string get_stats_file_path();
     static StatsData load_stats();
     static void record_run(uint64_t original_tokens, uint64_t compressed_tokens);
+    static double calculate_savings_usd(uint64_t tokens_saved) noexcept;
     static void print_dashboard();
 };
 

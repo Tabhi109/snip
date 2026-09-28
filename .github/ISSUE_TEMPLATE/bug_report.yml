@@ -1,0 +1,50 @@
+name: 🐛 Bug Report
+description: Report unexpected pruning behavior, swallowed information, or execution failures
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug!
+        `snip` operates under a strict **Signal Over Silence** and **Never Break Agent Execution** invariant.
+  - type: input
+    id: command
+    attributes:
+      label: Intercepted Command
+      description: What command were you running through snip?
+      placeholder: e.g. git status, pytest, docker ps
+    validations:
+      required: true
+  - type: textarea
+    id: raw_output
+    attributes:
+      label: Raw Command Output
+      description: What was the full, unpruned output produced by the command?
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: actual_output
+    attributes:
+      label: Actual Output from snip
+      description: What did snip output? Highlight if critical error lines, line numbers, or file paths were inadvertently pruned.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected_output
+    attributes:
+      label: Expected Behavior
+      description: What should snip have preserved or pruned?
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Operating System, shell, and snip version.
+      placeholder: macOS Sonoma (arm64), zsh, snip v0.2.0
+    validations:
+      required: true

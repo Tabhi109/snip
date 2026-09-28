@@ -18,6 +18,7 @@ add_executable(snip_tests
     test_fallback_engine.cpp
     test_rule_engine.cpp
     test_fixtures.cpp
+    test_stats.cpp
 )
 
 target_link_libraries(snip_tests PRIVATE snip_core Catch2::Catch2)
