@@ -29,6 +29,7 @@ add_library(snip_core STATIC
     src/file_parser.cpp
     src/stats.cpp
     src/mcp_server.cpp
+    src/fallback_engine.cpp
 )
 
 add_executable(snip src/main.cpp)

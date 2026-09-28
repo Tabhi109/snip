@@ -42,26 +42,35 @@ int main(int argc, char* argv[]) {
 
     auto run_res = snip::ProcessRunner::execute(cmd_args);
 
-    if (run_res.exit_code != 0 && run_res.stdout_output.empty()) {
-        std::cerr << run_res.stderr_output;
-        return run_res.exit_code;
+    std::string raw_combined;
+    if (!run_res.stdout_output.empty() && !run_res.stderr_output.empty()) {
+        raw_combined = run_res.stdout_output + "\n" + run_res.stderr_output;
+    } else if (!run_res.stdout_output.empty()) {
+        raw_combined = run_res.stdout_output;
+    } else {
+        raw_combined = run_res.stderr_output;
     }
 
     auto parse_res = snip::Dispatcher::route_and_parse(
         cmd_args,
         run_res.stdout_output,
+        run_res.stderr_output,
         run_res.exit_code
     );
 
     snip::BPETokenizer tokenizer;
-    size_t orig_tokens = tokenizer.count_tokens(run_res.stdout_output);
+    size_t orig_tokens = tokenizer.count_tokens(raw_combined);
     size_t comp_tokens = tokenizer.count_tokens(parse_res.text);
 
     snip::StatsManager::record_run(orig_tokens, comp_tokens);
 
-    snip::RecoveryCache::save_raw(run_res.stdout_output);
+    snip::RecoveryCache::save_raw(raw_combined);
 
-    std::cout << parse_res.text;
+    if (run_res.exit_code != 0 && run_res.stdout_output.empty()) {
+        std::cerr << parse_res.text;
+    } else {
+        std::cout << parse_res.text;
+    }
 
     if (parse_res.was_compressed) {
         size_t saved_tokens = (orig_tokens > comp_tokens) ? (orig_tokens - comp_tokens) : 0;

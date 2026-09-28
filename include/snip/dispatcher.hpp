@@ -14,6 +14,13 @@ public:
         std::string_view stdout_content,
         int exit_code
     );
+
+    static ParseResult route_and_parse(
+        const std::vector<std::string>& cmd_args,
+        std::string_view stdout_content,
+        std::string_view stderr_content,
+        int exit_code
+    );
 };
 
 } // namespace snip
