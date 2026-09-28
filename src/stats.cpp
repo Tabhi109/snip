@@ -68,7 +68,9 @@ double StatsManager::calculate_savings_usd(uint64_t tokens_saved) noexcept {
     return static_cast<double>(tokens_saved) * BLENDED_COST_PER_TOKEN;
 }
 
-static std::string format_commas(uint64_t n) {
+namespace {
+
+std::string format_commas(uint64_t n) {
     std::string s = std::to_string(n);
     int insert_pos = static_cast<int>(s.length()) - 3;
     while (insert_pos > 0) {
@@ -78,7 +80,7 @@ static std::string format_commas(uint64_t n) {
     return s;
 }
 
-static void print_card_line(const std::string& text, size_t inner_width = 59) {
+void print_card_line(const std::string& text, size_t inner_width = 59) {
     std::cout << "│ ";
     if (text.size() > inner_width) {
         std::cout << text.substr(0, inner_width - 3) << "...";
@@ -87,6 +89,8 @@ static void print_card_line(const std::string& text, size_t inner_width = 59) {
     }
     std::cout << " │\n";
 }
+
+} // namespace
 
 void StatsManager::print_dashboard() {
     StatsData data = load_stats();

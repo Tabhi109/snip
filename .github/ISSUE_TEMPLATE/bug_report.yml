@@ -1,4 +1,4 @@
-name: 🐛 Bug Report
+name: Bug Report
 description: Report unexpected pruning behavior, swallowed information, or execution failures
 title: "[Bug]: "
 labels: ["bug"]

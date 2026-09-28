@@ -13,7 +13,9 @@
 
 namespace snip {
 
-static std::string json_escape(std::string_view s) {
+namespace {
+
+std::string json_escape(std::string_view s) {
     std::string out;
     out.reserve(s.size() + 16);
     for (char c : s) {
@@ -35,7 +37,7 @@ static std::string json_escape(std::string_view s) {
     return out;
 }
 
-static std::string extract_json_string(std::string_view json, std::string_view key) {
+std::string extract_json_string(std::string_view json, std::string_view key) {
     std::string needle = "\"" + std::string(key) + "\"";
     size_t pos = json.find(needle);
     if (pos == std::string::npos) return "";
@@ -55,7 +57,7 @@ static std::string extract_json_string(std::string_view json, std::string_view k
     return std::string(json.substr(first_quote + 1, second_quote - first_quote - 1));
 }
 
-static std::string extract_json_id(std::string_view json) {
+std::string extract_json_id(std::string_view json) {
     size_t id_pos = json.find("\"id\":");
     if (id_pos == std::string::npos) {
         id_pos = json.find("\"id\" :");
@@ -87,6 +89,8 @@ static std::string extract_json_id(std::string_view json) {
     }
     return std::string(json.substr(start));
 }
+
+} // namespace
 
 void MCPServer::send_response(const std::string& json_str) {
     std::cout << json_str << "\n" << std::flush;

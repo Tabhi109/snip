@@ -11,19 +11,31 @@
 
 namespace snip {
 
-static void log_warning(const std::string& msg) {
+namespace {
+
+void log_warning(const std::string& msg) {
     std::ofstream log_file("/tmp/snip_last_run.log", std::ios::app);
     if (log_file.is_open()) {
         log_file << "[snip:rule_engine WARN] " << msg << "\n";
     }
 }
 
-static std::string trim_view(std::string_view sv) {
+std::string trim_view(std::string_view sv) {
     size_t first = sv.find_first_not_of(" \t\r\n");
     if (first == std::string_view::npos) return "";
     size_t last = sv.find_last_not_of(" \t\r\n");
     return std::string(sv.substr(first, last - first + 1));
 }
+
+template <typename NodeView>
+std::string get_string_or(const NodeView& node, std::string_view def = "") {
+    if (auto val = node.template value<std::string>()) {
+        return *val;
+    }
+    return std::string(def);
+}
+
+} // namespace
 
 RuleEngine::RuleEngine() {
     load_embedded_rules();
@@ -117,14 +129,6 @@ bool RuleEngine::load_from_file(const std::filesystem::path& file_path) {
         log_warning("Exception reading file " + file_path.string() + ": " + ex.what());
         return false;
     }
-}
-
-template <typename NodeView>
-static std::string get_string_or(const NodeView& node, std::string_view def = "") {
-    if (auto val = node.template value<std::string>()) {
-        return *val;
-    }
-    return std::string(def);
 }
 
 bool RuleEngine::load_from_toml_string(std::string_view toml_content, const std::string& source_name) {

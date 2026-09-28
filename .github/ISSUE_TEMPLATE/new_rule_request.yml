@@ -1,4 +1,4 @@
-name: 💡 New Rule Request
+name: New Rule Request
 description: Propose a new CLI command to prune with snip
 title: "[Rule Request]: "
 labels: ["enhancement", "rules"]

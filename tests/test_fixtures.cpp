@@ -10,6 +10,8 @@
 #include <sstream>
 #include <vector>
 
+namespace {
+
 namespace fs = std::filesystem;
 
 struct FixtureMeta {
@@ -17,7 +19,7 @@ struct FixtureMeta {
     int exit_code{0};
 };
 
-static std::string read_file_string(const fs::path& p) {
+std::string read_file_string(const fs::path& p) {
     std::ifstream file(p);
     if (!file.is_open()) return "";
     std::stringstream buffer;
@@ -25,13 +27,13 @@ static std::string read_file_string(const fs::path& p) {
     return buffer.str();
 }
 
-static void write_file_string(const fs::path& p, const std::string& content) {
+void write_file_string(const fs::path& p, const std::string& content) {
     fs::create_directories(p.parent_path());
     std::ofstream file(p, std::ios::trunc);
     file << content;
 }
 
-static fs::path resolve_fixtures_dir() {
+fs::path resolve_fixtures_dir() {
 #ifdef SNIP_FIXTURES_DIR
     if (fs::exists(SNIP_FIXTURES_DIR)) {
         return fs::path(SNIP_FIXTURES_DIR);
@@ -48,7 +50,7 @@ static fs::path resolve_fixtures_dir() {
     return "";
 }
 
-static FixtureMeta load_fixture_meta(const fs::path& meta_path, const std::string& stem) {
+FixtureMeta load_fixture_meta(const fs::path& meta_path, const std::string& stem) {
     FixtureMeta meta;
     if (fs::exists(meta_path)) {
         std::string content = read_file_string(meta_path);
@@ -87,7 +89,7 @@ static FixtureMeta load_fixture_meta(const fs::path& meta_path, const std::strin
     return meta;
 }
 
-static std::string generate_diff_view(std::string_view actual, std::string_view expected) {
+std::string generate_diff_view(std::string_view actual, std::string_view expected) {
     std::stringstream ss;
     ss << "=== DIFF VIEW ===\n";
     ss << "--- Expected Snapshot ---\n" << expected;
@@ -97,6 +99,8 @@ static std::string generate_diff_view(std::string_view actual, std::string_view 
     ss << "=========================\n";
     return ss.str();
 }
+
+} // namespace
 
 TEST_CASE("Golden Fixtures Snapshot Suite", "[fixtures][golden]") {
     snip::RuleEngine::instance().reset();

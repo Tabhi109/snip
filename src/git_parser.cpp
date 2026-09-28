@@ -3,7 +3,6 @@
 #include <vector>
 #include <unordered_map>
 #include <filesystem>
-#include <regex>
 
 namespace fs = std::filesystem;
 

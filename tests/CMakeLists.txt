@@ -4,6 +4,7 @@ FetchContent_Declare(
     Catch2
     GIT_REPOSITORY https://github.com/catchorg/Catch2.git
     GIT_TAG v3.5.2
+    SYSTEM
 )
 FetchContent_MakeAvailable(Catch2)
 
@@ -23,6 +24,7 @@ add_executable(snip_tests
 
 target_link_libraries(snip_tests PRIVATE snip_core Catch2::Catch2)
 target_compile_definitions(snip_tests PRIVATE SNIP_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures")
+target_compile_options(snip_tests PRIVATE ${SNIP_WARN_FLAGS})
 
 include(CTest)
 include(Catch)

@@ -96,7 +96,7 @@ std::string FileParser::prune_tree(std::string_view content) {
     std::string out;
     out.reserve(content.size() / 2);
 
-    const std::unordered_set<std::string> blacklist = {
+    static const std::unordered_set<std::string> blacklist = {
         ".git", "node_modules", "build", "target", ".venv", "venv",
         "dist", "__pycache__", ".idea", ".vscode", "CMakeFiles"
     };

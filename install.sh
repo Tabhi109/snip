@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-REPO="Tabhi109/snip" # Replace with your GitHub repo slug
+REPO="Tabhi109/snip"
 VERSION="v0.2.0"
 
 OS="$(uname -s | tr '[:upper:]' '[:lower:]')"

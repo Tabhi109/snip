@@ -8,7 +8,9 @@
 
 namespace snip {
 
-static bool contains_case_insensitive(std::string_view haystack, std::string_view needle) {
+namespace {
+
+bool contains_case_insensitive(std::string_view haystack, std::string_view needle) {
     if (needle.empty()) return true;
     if (haystack.size() < needle.size()) return false;
     auto it = std::search(
@@ -22,7 +24,7 @@ static bool contains_case_insensitive(std::string_view haystack, std::string_vie
     return it != haystack.end();
 }
 
-static bool is_error_anchor(std::string_view line) {
+bool is_error_anchor(std::string_view line) {
     if (line.empty()) return false;
 
     // Guard against false positives like "0 errors, 0 failed" in test summaries
@@ -59,6 +61,8 @@ static bool is_error_anchor(std::string_view line) {
 
     return false;
 }
+
+} // namespace
 
 std::string FallbackEngine::compact_whitespace(std::string_view input, size_t max_blank) {
     if (input.empty()) return "";

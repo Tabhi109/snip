@@ -1,6 +1,9 @@
 #pragma once
 
+#include <cstdlib>
+#include <filesystem>
 #include <string>
+#include <vector>
 
 namespace snip {
 
