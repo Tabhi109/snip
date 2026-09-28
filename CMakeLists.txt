@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(snip VERSION 0.2.0 LANGUAGES CXX)
+project(snip VERSION 0.2.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -42,10 +42,12 @@ add_library(snip_core STATIC
 )
 target_link_libraries(snip_core PUBLIC tomlplusplus::tomlplusplus)
 target_compile_options(snip_core PRIVATE ${SNIP_WARN_FLAGS})
+target_compile_definitions(snip_core PUBLIC SNIP_VERSION="${PROJECT_VERSION}")
 
 add_executable(snip src/main.cpp)
 target_link_libraries(snip PRIVATE snip_core)
 target_compile_options(snip PRIVATE ${SNIP_WARN_FLAGS})
+target_compile_definitions(snip PRIVATE SNIP_VERSION="${PROJECT_VERSION}")
 
 enable_testing()
 add_subdirectory(tests)

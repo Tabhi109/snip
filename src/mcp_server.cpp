@@ -200,9 +200,12 @@ void MCPServer::handle_request(std::string_view line) {
 
     // 1. Initialize
     if (method == "initialize") {
+#ifndef SNIP_VERSION
+#define SNIP_VERSION "0.0.0"
+#endif
         std::string resp = "{\"jsonrpc\":\"2.0\",\"id\":" + id + 
             ",\"result\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{\"tools\":{}},"
-            "\"serverInfo\":{\"name\":\"snip\",\"version\":\"0.2.0\"}}}";
+            "\"serverInfo\":{\"name\":\"snip\",\"version\":\"" + std::string(SNIP_VERSION) + "\"}}}";
         send_response(resp);
         return;
     }

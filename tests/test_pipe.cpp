@@ -67,4 +67,16 @@ TEST_CASE("snip CLI pipes and strips ANSI sequences via stdin", "[pipe]") {
     CHECK(res.stdout_output.find("\033[") == std::string::npos);
     CHECK(res.stdout_output.find("Error message") != std::string::npos);
 }
+
+TEST_CASE("snip CLI prints injected SNIP_VERSION", "[version]") {
+    std::string cmd = std::string(SNIP_EXECUTABLE_PATH) + " --version";
+    auto res = snip::ProcessRunner::execute({"sh", "-c", cmd});
+
+    REQUIRE(res.exit_code == 0);
+    CHECK(res.stdout_output.find("snip version ") != std::string::npos);
+#ifdef SNIP_VERSION
+    CHECK(res.stdout_output.find(SNIP_VERSION) != std::string::npos);
 #endif
+}
+#endif
+

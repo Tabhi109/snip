@@ -68,7 +68,10 @@ int main(int argc, char* argv[]) {
     }
 
     if (first_arg == "--version" || first_arg == "-v") {
-        std::cout << "snip version 0.2.0 (C++20)\n";
+#ifndef SNIP_VERSION
+#define SNIP_VERSION "0.0.0"
+#endif
+        std::cout << "snip version " << SNIP_VERSION << " (C++20)\n";
         return 0;
     }
 
