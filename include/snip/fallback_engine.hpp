@@ -38,6 +38,13 @@ public:
         const FallbackOptions& options = {}
     ) noexcept;
 
+    // Prune raw content using default fallback heuristics
+    static ParseResult prune(
+        std::string_view content,
+        int exit_code = 0,
+        const FallbackOptions& options = {}
+    ) noexcept;
+
     // Sub-algorithms exposed for direct testing and modular reuse
     static std::string compact_whitespace(std::string_view input, size_t max_blank = 1);
     

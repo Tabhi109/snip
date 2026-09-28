@@ -325,4 +325,13 @@ ParseResult FallbackEngine::process(
     return process(cmd_args, stdout_content, "", exit_code, options);
 }
 
+ParseResult FallbackEngine::prune(
+    std::string_view content,
+    int exit_code,
+    const FallbackOptions& options
+) noexcept {
+    return process({}, content, "", exit_code, options);
+}
+
 } // namespace snip
+

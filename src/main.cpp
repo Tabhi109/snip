@@ -5,11 +5,42 @@
 #include "snip/bpe.hpp"
 #include "snip/stats.hpp"
 #include "snip/mcp_server.hpp"
+#include "snip/fallback_engine.hpp"
 #include <iostream>
 #include <vector>
 #include <string>
+#include <iterator>
+#include <unistd.h>
 
 int main(int argc, char* argv[]) {
+    if (argc == 1 && !isatty(STDIN_FILENO)) {
+        std::string stdin_content(
+            (std::istreambuf_iterator<char>(std::cin)),
+            std::istreambuf_iterator<char>()
+        );
+
+        auto parse_res = snip::FallbackEngine::prune(stdin_content, 0);
+
+        snip::BPETokenizer tokenizer;
+        size_t orig_tokens = tokenizer.count_tokens(stdin_content);
+        size_t comp_tokens = tokenizer.count_tokens(parse_res.text);
+
+        snip::StatsManager::record_run(orig_tokens, comp_tokens);
+        snip::RecoveryCache::save_raw(stdin_content);
+
+        std::cout << parse_res.text;
+
+        if (parse_res.was_compressed) {
+            size_t saved_tokens = (orig_tokens > comp_tokens) ? (orig_tokens - comp_tokens) : 0;
+            int pct = (orig_tokens > 0) ? static_cast<int>((saved_tokens * 100) / orig_tokens) : 0;
+            std::cout << "\n[snip: " << orig_tokens << " -> " << comp_tokens
+                      << " tokens (" << saved_tokens << " saved, " << pct << "% reduction). Raw: "
+                      << snip::RecoveryCache::CACHE_PATH << "]\n";
+        }
+
+        return 0;
+    }
+
     if (argc < 2) {
         std::cerr << "Usage: snip <command> [args...]\n"
                   << "       snip init [bash|zsh|--claude|--cursor|--shims]\n"

@@ -54,7 +54,7 @@ ParseResult Dispatcher::route_and_parse(
         else if (binary == "rg" || binary == "grep") {
             parser = std::make_unique<SearchParser>();
         } 
-        else if (binary == "cat" || binary == "read" || binary == "find" || binary == "ls" || binary == "tree") {
+        else if (binary == "find" || binary == "ls" || binary == "tree") {
             parser = std::make_unique<FileParser>();
         }
         else if (binary == "pytest" || sub_cmd == "pytest" ||

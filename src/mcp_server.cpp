@@ -48,13 +48,41 @@ std::string extract_json_string(std::string_view json, std::string_view key) {
     size_t first_quote = json.find('"', colon + 1);
     if (first_quote == std::string::npos) return "";
 
-    size_t second_quote = json.find('"', first_quote + 1);
-    while (second_quote != std::string_view::npos && json[second_quote - 1] == '\\') {
-        second_quote = json.find('"', second_quote + 1);
+    size_t second_quote = first_quote + 1;
+    while (second_quote < json.size()) {
+        if (json[second_quote] == '"') {
+            size_t b = second_quote;
+            while (b > first_quote && json[b - 1] == '\\') {
+                b--;
+            }
+            if ((second_quote - b) % 2 == 0) {
+                break;
+            }
+        }
+        second_quote++;
     }
-    if (second_quote == std::string::npos) return "";
+    if (second_quote >= json.size()) return "";
 
-    return std::string(json.substr(first_quote + 1, second_quote - first_quote - 1));
+    std::string_view raw = json.substr(first_quote + 1, second_quote - first_quote - 1);
+    std::string unescaped;
+    unescaped.reserve(raw.size());
+    for (size_t i = 0; i < raw.size(); ++i) {
+        if (raw[i] == '\\' && i + 1 < raw.size()) {
+            char next = raw[i + 1];
+            if (next == '"') { unescaped += '"'; ++i; }
+            else if (next == '\\') { unescaped += '\\'; ++i; }
+            else if (next == '/') { unescaped += '/'; ++i; }
+            else if (next == 'b') { unescaped += '\b'; ++i; }
+            else if (next == 'f') { unescaped += '\f'; ++i; }
+            else if (next == 'n') { unescaped += '\n'; ++i; }
+            else if (next == 'r') { unescaped += '\r'; ++i; }
+            else if (next == 't') { unescaped += '\t'; ++i; }
+            else { unescaped += raw[i]; }
+        } else {
+            unescaped += raw[i];
+        }
+    }
+    return unescaped;
 }
 
 std::string extract_json_id(std::string_view json) {
@@ -91,6 +119,74 @@ std::string extract_json_id(std::string_view json) {
 }
 
 } // namespace
+
+std::vector<std::string> MCPServer::parse_command_line(std::string_view cmd) {
+    std::vector<std::string> args;
+    std::string current;
+    bool in_single_quote = false;
+    bool in_double_quote = false;
+    bool has_token = false;
+
+    for (size_t i = 0; i < cmd.size(); ++i) {
+        char c = cmd[i];
+
+        if (in_single_quote) {
+            if (c == '\'') {
+                in_single_quote = false;
+            } else {
+                current += c;
+            }
+        } else if (in_double_quote) {
+            if (c == '\\') {
+                if (i + 1 < cmd.size()) {
+                    char next = cmd[i + 1];
+                    if (next == '"' || next == '\\' || next == '$' || next == '`') {
+                        current += next;
+                        ++i;
+                    } else {
+                        current += '\\';
+                    }
+                } else {
+                    current += '\\';
+                }
+            } else if (c == '"') {
+                in_double_quote = false;
+            } else {
+                current += c;
+            }
+        } else {
+            if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+                if (has_token) {
+                    args.push_back(std::move(current));
+                    current.clear();
+                    has_token = false;
+                }
+            } else if (c == '\'') {
+                in_single_quote = true;
+                has_token = true;
+            } else if (c == '"') {
+                in_double_quote = true;
+                has_token = true;
+            } else if (c == '\\') {
+                has_token = true;
+                if (i + 1 < cmd.size()) {
+                    current += cmd[++i];
+                } else {
+                    current += '\\';
+                }
+            } else {
+                current += c;
+                has_token = true;
+            }
+        }
+    }
+
+    if (has_token) {
+        args.push_back(std::move(current));
+    }
+
+    return args;
+}
 
 void MCPServer::send_response(const std::string& json_str) {
     std::cout << json_str << "\n" << std::flush;
@@ -160,11 +256,7 @@ void MCPServer::handle_request(std::string_view line) {
 
         if (tool_name == "snip_exec") {
             std::string cmd = extract_json_string(line, "command");
-            
-            std::istringstream iss(cmd);
-            std::vector<std::string> args;
-            std::string token;
-            while (iss >> token) args.push_back(token);
+            std::vector<std::string> args = parse_command_line(cmd);
 
             auto run_res = ProcessRunner::execute(args);
             auto parse_res = Dispatcher::route_and_parse(args, run_res.stdout_output, run_res.exit_code);

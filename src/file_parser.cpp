@@ -118,21 +118,14 @@ std::string FileParser::prune_tree(std::string_view content) {
 }
 
 ParseResult FileParser::parse(
-    const std::vector<std::string>& cmd_args,
+    const std::vector<std::string>& /*cmd_args*/,
     std::string_view stdout_content,
     int /*exit_code*/
 ) {
     ParseResult res;
     res.original_bytes = stdout_content.size();
 
-    std::string binary = cmd_args.empty() ? "" : cmd_args[0];
-    std::string compressed;
-
-    if (binary == "cat" || binary == "read") {
-        compressed = skeletonize_code(stdout_content, "");
-    } else {
-        compressed = prune_tree(stdout_content);
-    }
+    std::string compressed = prune_tree(stdout_content);
 
     res.compressed_bytes = compressed.size();
     res.was_compressed = (res.compressed_bytes < res.original_bytes);
