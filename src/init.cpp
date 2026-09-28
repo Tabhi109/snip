@@ -1,6 +1,7 @@
 #include "snip/init.hpp"
 #include <iostream>
 #include <fstream>
+#include <vector>
 #include <sstream>
 #include <filesystem>
 #include <cstdlib>
