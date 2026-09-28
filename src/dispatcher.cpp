@@ -4,6 +4,7 @@
 #include "snip/search_parser.hpp"
 #include "snip/file_parser.hpp"
 #include "snip/fallback_engine.hpp"
+#include "snip/rule_engine.hpp"
 
 namespace snip {
 
@@ -26,6 +27,16 @@ ParseResult Dispatcher::route_and_parse(
     }
 
     try {
+        // Step 1: Check Declarative Rule Engine (Tier 1)
+        const auto* rule = RuleEngine::instance().find_rule(cmd_args, exit_code);
+        if (rule) {
+            auto rule_res = RuleEngine::instance().execute_rule(*rule, stdout_content, exit_code);
+            if (rule_res.was_compressed && !rule_res.text.empty()) {
+                return rule_res;
+            }
+        }
+
+        // Step 2: Legacy Domain Parsers (during migration transition)
         const std::string& binary = cmd_args[0];
         std::string sub_cmd;
         for (size_t i = 1; i < cmd_args.size(); ++i) {
@@ -58,7 +69,7 @@ ParseResult Dispatcher::route_and_parse(
             return parser->parse(cmd_args, stdout_content, exit_code);
         }
 
-        // Tier 2: Universal Fallback Engine for all other tools
+        // Step 3: Tier 2: Universal Fallback Engine for all other tools
         return FallbackEngine::process(cmd_args, stdout_content, stderr_content, exit_code);
     } catch (...) {
         // Core Invariant 1: Never Break Agent Execution

@@ -16,6 +16,7 @@ add_executable(snip_tests
     test_test_parser.cpp
     test_search_parser.cpp
     test_fallback_engine.cpp
+    test_rule_engine.cpp
 )
 
 target_link_libraries(snip_tests PRIVATE snip_core Catch2::Catch2WithMain)

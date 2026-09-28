@@ -13,6 +13,15 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang|GNU")
     )
 endif()
 
+include(FetchContent)
+
+FetchContent_Declare(
+    tomlplusplus
+    GIT_REPOSITORY https://github.com/marzer/tomlplusplus.git
+    GIT_TAG v3.4.0
+)
+FetchContent_MakeAvailable(tomlplusplus)
+
 include_directories(include)
 
 add_library(snip_core STATIC
@@ -30,7 +39,10 @@ add_library(snip_core STATIC
     src/stats.cpp
     src/mcp_server.cpp
     src/fallback_engine.cpp
+    src/embedded_rules.cpp
+    src/rule_engine.cpp
 )
+target_link_libraries(snip_core PUBLIC tomlplusplus::tomlplusplus)
 
 add_executable(snip src/main.cpp)
 target_link_libraries(snip PRIVATE snip_core)
