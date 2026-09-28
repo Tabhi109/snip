@@ -18,24 +18,31 @@ jobs:
           - os: macos-latest
             target: macos-arm64
             artifact: snip-macos-arm64.tar.gz
-          - os: macos-13
+            cmake_flags: "-DCMAKE_OSX_ARCHITECTURES=arm64"
+            run_tests: true
+          - os: macos-latest
             target: macos-x86_64
             artifact: snip-macos-x86_64.tar.gz
+            cmake_flags: "-DCMAKE_OSX_ARCHITECTURES=x86_64"
+            run_tests: false
           - os: ubuntu-latest
             target: linux-x86_64
             artifact: snip-linux-x86_64.tar.gz
+            cmake_flags: ""
+            run_tests: true
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Configure CMake
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_flags }}
 
       - name: Build Binary
         run: cmake --build build --config Release
 
       - name: Run Tests
+        if: ${{ matrix.run_tests }}
         run: ctest --test-dir build --output-on-failure
 
       - name: Package
