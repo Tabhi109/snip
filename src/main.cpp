@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
             int pct = (orig_tokens > 0) ? static_cast<int>((saved_tokens * 100) / orig_tokens) : 0;
             std::cout << "\n[snip: " << orig_tokens << " -> " << comp_tokens
                       << " tokens (" << saved_tokens << " saved, " << pct << "% reduction). Raw: "
-                      << snip::RecoveryCache::CACHE_PATH << "]\n";
+                      << snip::RecoveryCache::get_cache_path() << "]\n";
         }
 
         return 0;
@@ -152,7 +152,7 @@ int main(int argc, char* argv[]) {
         int pct = (orig_tokens > 0) ? static_cast<int>((saved_tokens * 100) / orig_tokens) : 0;
         std::cout << "\n[snip: " << orig_tokens << " -> " << comp_tokens
                   << " tokens (" << saved_tokens << " saved, " << pct << "% reduction). Raw: "
-                  << snip::RecoveryCache::CACHE_PATH << "]\n";
+                  << snip::RecoveryCache::get_cache_path() << "]\n";
     }
 
     return run_res.exit_code;

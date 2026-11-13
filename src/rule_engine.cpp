@@ -1,6 +1,7 @@
 #include "snip/rule_engine.hpp"
 #include "snip/embedded_rules.hpp"
 #include "snip/dedup.hpp"
+#include "snip/cache.hpp"
 #include <toml++/toml.hpp>
 
 #include <algorithm>
@@ -14,7 +15,7 @@ namespace snip {
 namespace {
 
 void log_warning(const std::string& msg) {
-    std::ofstream log_file("/tmp/snip_last_run.log", std::ios::app);
+    std::ofstream log_file(RecoveryCache::get_cache_path(), std::ios::app);
     if (log_file.is_open()) {
         log_file << "[snip:rule_engine WARN] " << msg << "\n";
     }

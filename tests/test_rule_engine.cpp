@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include "snip/rule_engine.hpp"
 #include "snip/dispatcher.hpp"
+#include "snip/cache.hpp"
 #include <fstream>
 
 TEST_CASE("RuleEngine loads and matches columnar TOML rule", "[rule_engine]") {
@@ -57,8 +58,8 @@ drop_lines_matching = ["[unclosed-bracket"]
 )toml";
     REQUIRE(engine.load_from_toml_string(invalid_regex_toml, "bad_regex.toml") == false);
 
-    // Check that warning was logged to /tmp/snip_last_run.log
-    std::ifstream log("/tmp/snip_last_run.log");
+    // Check that warning was logged to recovery cache
+    std::ifstream log(snip::RecoveryCache::get_cache_path());
     REQUIRE(log.is_open());
     std::string line;
     bool found_warning = false;

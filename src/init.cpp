@@ -11,6 +11,30 @@ namespace fs = std::filesystem;
 
 namespace snip {
 
+namespace {
+
+std::string resolve_snip_binary() {
+    const char* home = std::getenv("HOME");
+    std::vector<fs::path> candidates;
+    if (home) {
+        candidates.push_back(fs::path(home) / ".local" / "bin" / "snip");
+        candidates.push_back(fs::path(home) / ".snip" / "bin" / "snip");
+    }
+    candidates.push_back("/opt/homebrew/bin/snip");
+    candidates.push_back("/usr/local/bin/snip");
+    candidates.push_back("/usr/bin/snip");
+
+    for (const auto& candidate : candidates) {
+        std::error_code ec;
+        if (fs::exists(candidate, ec) && !ec) {
+            return candidate.string();
+        }
+    }
+    return "snip";
+}
+
+} // namespace
+
 void SetupManager::emit_shell_aliases(const std::string& shell_name) {
     std::string rc_file = (shell_name == "zsh") ? "~/.zshrc" : "~/.bashrc";
     std::cout << "# snip " << shell_name << " integration\n"
@@ -44,13 +68,7 @@ bool SetupManager::setup_claude_desktop() {
 
     fs::path config_file = config_dir / "claude_desktop_config.json";
 
-    std::string snip_bin = "snip";
-    // Check if installed in standard locations or current path
-    if (fs::exists("/usr/local/bin/snip")) {
-        snip_bin = "/usr/local/bin/snip";
-    } else if (fs::exists(fs::path(home) / ".snip" / "bin" / "snip")) {
-        snip_bin = (fs::path(home) / ".snip" / "bin" / "snip").string();
-    }
+    std::string snip_bin = resolve_snip_binary();
 
     const std::string sample_mcp_block =
         "{\n"
@@ -119,36 +137,108 @@ bool SetupManager::setup_claude_desktop() {
 }
 
 bool SetupManager::setup_cursor() {
-    std::string snip_bin = "snip";
-    const char* home = std::getenv("HOME");
-    if (home) {
-        if (fs::exists("/usr/local/bin/snip")) {
-            snip_bin = "/usr/local/bin/snip";
-        } else if (fs::exists(fs::path(home) / ".snip" / "bin" / "snip")) {
-            snip_bin = (fs::path(home) / ".snip" / "bin" / "snip").string();
+    std::string snip_bin = resolve_snip_binary();
+
+    fs::path cursor_dir = ".cursor";
+    fs::path cursor_mcp = cursor_dir / "mcp.json";
+    fs::path cursor_rules_dir = cursor_dir / "rules";
+    fs::path cursor_mdc = cursor_rules_dir / "snip.mdc";
+    fs::path cursorrules_file = ".cursorrules";
+
+    try {
+        if (!fs::exists(cursor_dir)) {
+            fs::create_directories(cursor_dir);
         }
+
+        // 1. Setup .cursor/mcp.json
+        if (!fs::exists(cursor_mcp)) {
+            std::ofstream out(cursor_mcp, std::ios::trunc);
+            out << "{\n"
+                << "  \"mcpServers\": {\n"
+                << "    \"snip\": {\n"
+                << "      \"command\": \"" << snip_bin << "\",\n"
+                << "      \"args\": [\"mcp\"]\n"
+                << "    }\n"
+                << "  }\n"
+                << "}\n";
+            out.close();
+            std::cout << "✓ Created " << cursor_mcp.string() << " (command: " << snip_bin << ")\n";
+        } else {
+            std::ifstream in(cursor_mcp);
+            std::stringstream buf;
+            buf << in.rdbuf();
+            std::string content = buf.str();
+            in.close();
+
+            if (content.find("\"snip\"") == std::string::npos) {
+                size_t mcp_pos = content.find("\"mcpServers\"");
+                if (mcp_pos != std::string::npos) {
+                    size_t brace = content.find('{', mcp_pos);
+                    if (brace != std::string::npos) {
+                        std::string addition = "\n    \"snip\": {\n"
+                                               "      \"command\": \"" + snip_bin + "\",\n"
+                                               "      \"args\": [\"mcp\"]\n"
+                                               "    },";
+                        content.insert(brace + 1, addition);
+                        std::ofstream out(cursor_mcp, std::ios::trunc);
+                        out << content;
+                        out.close();
+                        std::cout << "✓ Added 'snip' MCP server to " << cursor_mcp.string() << "\n";
+                    }
+                }
+            } else {
+                std::cout << "✓ 'snip' MCP server already registered in " << cursor_mcp.string() << "\n";
+            }
+        }
+
+        // 2. Setup Cursor Agent Rule so Cursor Agent actively calls snip_exec
+        if (!fs::exists(cursor_rules_dir)) {
+            fs::create_directories(cursor_rules_dir);
+        }
+        if (!fs::exists(cursor_mdc)) {
+            std::ofstream out(cursor_mdc, std::ios::trunc);
+            out << "---\n"
+                << "description: Optimize CLI token consumption via snip MCP\n"
+                << "globs: *\n"
+                << "---\n"
+                << "# snip Token Optimization\n\n"
+                << "Always execute CLI and terminal commands using the `snip_exec` tool from the `snip` MCP server\n"
+                << "instead of running commands directly through standard terminal execution. This reduces context\n"
+                << "token bloat from build logs, test suites, and terminal output by 50% to 90%.\n";
+            out.close();
+            std::cout << "✓ Created agent rule in " << cursor_mdc.string() << "\n";
+        }
+
+        // Also create .cursorrules for legacy compatibility if absent
+        if (!fs::exists(cursorrules_file)) {
+            std::ofstream out(cursorrules_file, std::ios::trunc);
+            out << "# snip Token Optimization\n"
+                << "Always execute CLI and terminal commands using the `snip_exec` tool from the `snip` MCP server.\n";
+            out.close();
+            std::cout << "✓ Created " << cursorrules_file.string() << "\n";
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "! Notice: Could not auto-generate .cursor workspace files: " << e.what() << "\n";
     }
 
     std::cout << "\n============================================================\n"
               << "               Cursor MCP Server Configuration              \n"
               << "============================================================\n\n"
-              << "Option 1: Add via Cursor Settings UI\n"
+              << "Workspace files configured:\n"
+              << "  - .cursor/mcp.json        : Registers snip MCP server (" << snip_bin << ")\n"
+              << "  - .cursor/rules/snip.mdc  : Instructs Cursor Agent to use snip_exec\n"
+              << "  - .cursorrules            : Legacy agent fallback rule\n\n"
+              << "Manual Setup (Cursor Settings UI):\n"
               << "  1. Open Cursor Settings (Cmd+, on macOS, Ctrl+, on Linux/Windows)\n"
               << "  2. Navigate to: Features > MCP Servers\n"
               << "  3. Click 'Add New MCP Server':\n"
               << "       Name    : snip\n"
               << "       Type    : command\n"
               << "       Command : " << snip_bin << " mcp\n\n"
-              << "Option 2: Workspace Project Configuration (.cursor/mcp.json)\n"
-              << "  Create or update .cursor/mcp.json in your project repository:\n\n"
-              << "{\n"
-              << "  \"mcpServers\": {\n"
-              << "    \"snip\": {\n"
-              << "      \"command\": \"" << snip_bin << "\",\n"
-              << "      \"args\": [\"mcp\"]\n"
-              << "    }\n"
-              << "  }\n"
-              << "}\n\n"
+              << "Why .cursorrules / snip.mdc is required:\n"
+              << "  Cursor Agent defaults to its built-in terminal runner rather than\n"
+              << "  MCP tools. The generated rule instructs the agent to route commands via snip_exec,\n"
+              << "  allowing snip to prune outputs and record token ROI (visible in 'snip gain').\n\n"
               << "Tools exposed to Cursor Agent:\n"
               << "  - snip_exec      : Executes any CLI command with deterministic token pruning\n"
               << "  - snip_read_file : Reads file in structural skeleton mode\n"
@@ -172,6 +262,8 @@ bool SetupManager::setup_shims() {
         return false;
     }
 
+    std::string snip_bin = resolve_snip_binary();
+
     // List of common noisy commands to shim
     const std::vector<std::string> shim_commands = {
         "git", "docker", "kubectl", "pytest", "cargo", "npm"
@@ -183,7 +275,7 @@ bool SetupManager::setup_shims() {
         if (!out.is_open()) continue;
 
         out << "#!/bin/sh\n";
-        out << "exec snip " << cmd << " \"$@\"\n";
+        out << "exec " << snip_bin << " " << cmd << " \"$@\"\n";
         out.close();
 
         // Make executable (chmod 755)
@@ -215,6 +307,8 @@ bool SetupManager::setup_claude_code() {
         return false;
     }
 
+    std::string snip_bin = resolve_snip_binary();
+
     std::ofstream out(hook_script, std::ios::out | std::ios::trunc);
     if (!out.is_open()) return false;
 
@@ -223,7 +317,7 @@ bool SetupManager::setup_claude_code() {
     out << "CMD=\"$1\"\n";
     out << "case \"$CMD\" in\n";
     out << "  git*|docker*|kubectl*|pytest*|cargo*|npm*)\n";
-    out << "    exec snip $CMD ;;\n";
+    out << "    exec " << snip_bin << " $CMD ;;\n";
     out << "  *)\n";
     out << "    exec $CMD ;;\n";
     out << "esac\n";

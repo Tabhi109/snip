@@ -53,9 +53,10 @@ Or via install script:
 curl -sSL https://raw.githubusercontent.com/Tabhi109/snip/main/install.sh | bash
 ```
 
-### 2. Shell Integration (`snip init`)
+### 2. Shell & Universal Agent Shims (`snip init`)
 
-Activate transparent aliases in your terminal:
+#### Transparent Terminal Aliases
+Activate aliases in your interactive terminal:
 
 ```bash
 # For Zsh (add to ~/.zshrc):
@@ -65,30 +66,34 @@ eval "$(snip init zsh)"
 eval "$(snip init bash)"
 ```
 
-### 3. Agent Integration (MCP)
+#### Universal Agent Shims (Recommended for Background Subshells)
+Because autonomous AI agents (Cursor, Claude Code, Aider) execute background terminal commands inside non-interactive subshells that bypass shell aliases, install transparent binary shims:
 
-#### Claude Desktop
-Register the `snip` MCP server:
 ```bash
-snip init --claude
+snip init --shims
+# Ensure ~/.snip/bin is at the front of your PATH (add to ~/.zshrc or ~/.bashrc):
+export PATH="$HOME/.snip/bin:$PATH"
 ```
 
+### 3. Agent Integration (MCP)
+
 #### Cursor
-View Cursor MCP configuration instructions:
+Auto-configure your workspace `.cursor/mcp.json` and agent rules in one step:
 ```bash
 snip init --cursor
 ```
 
-Or add directly to `.cursor/mcp.json`:
-```json
-{
-  "mcpServers": {
-    "snip": {
-      "command": "snip",
-      "args": ["mcp"]
-    }
-  }
-}
+This generates:
+1. `.cursor/mcp.json` pointing to your resolved `snip` binary path.
+2. `.cursor/rules/snip.mdc` instructing Cursor Agent to execute commands via `snip_exec`.
+
+> [!IMPORTANT]
+> **Why the Cursor Agent Rule is required:** By default, Cursor Agent invokes its native built-in terminal runner rather than MCP tools. The agent rule instructs Cursor to route command execution through `snip_exec`, allowing `snip` to prune outputs and record cumulative token savings in `snip gain`.
+
+#### Claude Desktop
+Auto-register the `snip` MCP server in your Claude Desktop configuration:
+```bash
+snip init --claude
 ```
 
 ---
